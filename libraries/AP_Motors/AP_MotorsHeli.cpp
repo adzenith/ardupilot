@@ -240,11 +240,11 @@ void AP_MotorsHeli::set_update_rate( uint16_t speed_hz )
     _speed_hz = speed_hz;
 
     // setup fast channels
-    uint32_t mask = 
-        1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]) |
-        1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]) |
-        1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]) |
-        1U << pgm_read_byte(&_motor_to_channel_map[_servo_yaw_motor]);
+    uint32_t mask = 0;
+    for (uint8_t s = 0; s < _num_swash_servos; s++) {
+        mask |= 1U << pgm_read_byte(&_motor_to_channel_map[s]);
+    }
+    mask |= 1U << pgm_read_byte(&_motor_to_channel_map[_servo_yaw_motor]);
     hal.rcout->set_freq(mask, _speed_hz);
 }
 
@@ -252,9 +252,9 @@ void AP_MotorsHeli::set_update_rate( uint16_t speed_hz )
 void AP_MotorsHeli::enable()
 {
     // enable output channels
-    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]));    // swash servo 1
-    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]));    // swash servo 2
-    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]));    // swash servo 3
+    for (uint8_t s = 0; s < _num_swash_servos; s++) {
+        hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[s]));    // swash servos
+    }
     hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[_servo_yaw_motor]));   // yaw
     hal.rcout->enable_ch(AP_MOTORS_HELI_AUX);                               // output for gyro gain or direct drive variable pitch tail motor
     hal.rcout->enable_ch(AP_MOTORS_HELI_RSC);                               // output for main rotor esc
@@ -281,34 +281,15 @@ void AP_MotorsHeli::output_test()
     // Send minimum values to all motors
     output_min();
 
-    // servo 1
-    for( i=0; i<5; i++ ) {
-        hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo_1.radio_trim + 100);
-        hal.scheduler->delay(300);
-        hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo_1.radio_trim - 100);
-        hal.scheduler->delay(300);
-        hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo_1.radio_trim + 0);
-        hal.scheduler->delay(300);
-    }
-
-    // servo 2
-    for( i=0; i<5; i++ ) {
-        hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo_2.radio_trim + 100);
-        hal.scheduler->delay(300);
-        hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo_2.radio_trim - 100);
-        hal.scheduler->delay(300);
-        hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo_2.radio_trim + 0);
-        hal.scheduler->delay(300);
-    }
-
-    // servo 3
-    for( i=0; i<5; i++ ) {
-        hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo_3.radio_trim + 100);
-        hal.scheduler->delay(300);
-        hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo_3.radio_trim - 100);
-        hal.scheduler->delay(300);
-        hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo_3.radio_trim + 0);
-        hal.scheduler->delay(300);
+    for (uint8_t s = 0; s < _num_swash_servos; s++) {
+        for( i=0; i<5; i++ ) {
+            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[s]), _servos[s]->radio_trim + 100);
+            hal.scheduler->delay(300);
+            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[s]), _servos[s]->radio_trim - 100);
+            hal.scheduler->delay(300);
+            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[s]), _servos[s]->radio_trim + 0);
+            hal.scheduler->delay(300);
+        }
     }
 
     // external gyro
@@ -419,12 +400,10 @@ void AP_MotorsHeli::output_disarmed()
 void AP_MotorsHeli::reset_swash()
 {
     // free up servo ranges
-    _servo_1.radio_min = 1000;
-    _servo_1.radio_max = 2000;
-    _servo_2.radio_min = 1000;
-    _servo_2.radio_max = 2000;
-    _servo_3.radio_min = 1000;
-    _servo_3.radio_max = 2000;
+    for (uint8_t s = 0; s < _num_swash_servos; s++) {
+        _servos[s]->radio_min = 1000;
+        _servos[s]->radio_max = 2000;
+    }
 
     // calculate factors based on swash type and servo position
     calculate_roll_pitch_collective_factors();
@@ -445,9 +424,9 @@ void AP_MotorsHeli::init_swash()
     _servo_yaw_motor = AP_MOTORS_MOT_4;
 
     // swash servo initialisation
-    _servo_1.set_range(0,1000);
-    _servo_2.set_range(0,1000);
-    _servo_3.set_range(0,1000);
+    for (uint8_t s = 0; s < _num_swash_servos; s++) {
+        _servos[s]->set_range(0,1000);
+    }
     _servo_yaw.set_angle(4500);
 
     // range check collective min, max and mid
@@ -469,12 +448,10 @@ void AP_MotorsHeli::init_swash()
     calculate_roll_pitch_collective_factors();
 
     // servo min/max values
-    _servo_1.radio_min = 1000;
-    _servo_1.radio_max = 2000;
-    _servo_2.radio_min = 1000;
-    _servo_2.radio_max = 2000;
-    _servo_3.radio_min = 1000;
-    _servo_3.radio_max = 2000;
+    for (uint8_t s = 0; s < _num_swash_servos; s++) {
+        _servos[s]->radio_min = 1000;
+        _servos[s]->radio_max = 2000;
+    }
 
     // mark swash as initialised
     _heliflags.swash_initialised = true;
@@ -607,13 +584,13 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
     }
 
     // swashplate servos
-    _servo_1.servo_out = (_rollFactor[CH_1] * roll_out + _pitchFactor[CH_1] * pitch_out)/10 + _collectiveFactor[CH_1] * coll_out_scaled + (_servo_1.radio_trim-1500);
-    _servo_2.servo_out = (_rollFactor[CH_2] * roll_out + _pitchFactor[CH_2] * pitch_out)/10 + _collectiveFactor[CH_2] * coll_out_scaled + (_servo_2.radio_trim-1500);
-    if (_swash_type == AP_MOTORS_HELI_SWASH_H1) {
-        _servo_1.servo_out += 500;
-        _servo_2.servo_out += 500;
+    for (uint8_t s = 0; s < _num_swash_servos; s++) {
+        _servos[s]->servo_out = (_rollFactor[s] * roll_out + _pitchFactor[s] * pitch_out)/10 + _collectiveFactor[s] * coll_out_scaled + (_servos[s]->radio_trim-1500);
     }
-    _servo_3.servo_out = (_rollFactor[CH_3] * roll_out + _pitchFactor[CH_3] * pitch_out)/10 + _collectiveFactor[CH_3] * coll_out_scaled + (_servo_3.radio_trim-1500);
+    if (_swash_type == AP_MOTORS_HELI_SWASH_H1) {
+        _servos[0]->servo_out += 500;
+        _servos[1]->servo_out += 500;
+    }
     _servo_yaw.servo_out = yaw_out + yaw_offset;
 
     // constrain yaw and update limits
@@ -627,15 +604,15 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
     }
 
     // use servo_out to calculate pwm_out and radio_out
-    _servo_1.calc_pwm();
-    _servo_2.calc_pwm();
-    _servo_3.calc_pwm();
+    for (uint8_t s = 0; s < _num_swash_servos; s++) {
+        _servos[s]->calc_pwm();
+    }
     _servo_yaw.calc_pwm();
 
     // actually move the servos
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo_1.radio_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo_2.radio_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo_3.radio_out);
+    for (uint8_t s = 0; s < _num_swash_servos; s++) {
+        hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[s]), _servos[s]->radio_out);
+    }
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[_servo_yaw_motor]), _servo_yaw.radio_out);
 
     // output gain to exernal gyro

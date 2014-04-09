@@ -102,9 +102,6 @@ public:
         AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
         _servo_aux(servo_aux),
         _servo_rsc(servo_rotor),
-        _servo_1(swash_servo_1),
-        _servo_2(swash_servo_2),
-        _servo_3(swash_servo_3),
         _servo_yaw(yaw_servo),
         _roll_scaler(1),
         _pitch_scaler(1),
@@ -119,6 +116,12 @@ public:
         _tail_direct_drive_out(0)
     {
         AP_Param::setup_object_defaults(this, var_info);
+
+        _num_swash_servos = 3;
+        _servos[0] = &swash_servo_1;
+        _servos[1] = &swash_servo_2;
+        _servos[2] = &swash_servo_3;
+        _servos[3] = NULL;
 
         // initialise flags
         _heliflags.swash_initialised = 0;
@@ -231,9 +234,7 @@ private:
     // external objects we depend upon
     RC_Channel&     _servo_aux;                 // output to ext gyro gain and tail direct drive esc (ch7)
     RC_Channel&     _servo_rsc;                 // output to main rotor esc (ch8)
-    RC_Channel&     _servo_1;                   // swash plate servo #1
-    RC_Channel&     _servo_2;                   // swash plate servo #2
-    RC_Channel&     _servo_3;                   // swash plate servo #3
+    RC_Channel*     _servos[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];// swash plate servos
     RC_Channel&     _servo_yaw;                 // tail servo
 
     // flags bitmask
@@ -282,6 +283,7 @@ private:
     float           _rsc_runup_increment;       // the amount we can increase the rotor's estimated speed during each 100hz iteration
     float           _rotor_speed_estimate;      // estimated speed of the main rotor (0~1000)
     int16_t         _tail_direct_drive_out;     // current ramped speed of output on ch7 when using direct drive variable pitch tail type
+    uint8_t         _num_swash_servos;          // number of servos used for the swashplate
     uint8_t         _servo_yaw_motor;           // motor number of the yaw servo - can change depending on how many swash servos we have
 };
 
