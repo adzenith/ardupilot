@@ -244,7 +244,7 @@ void AP_MotorsHeli::set_update_rate( uint16_t speed_hz )
         1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]) |
         1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]) |
         1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]) |
-        1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]);
+        1U << pgm_read_byte(&_motor_to_channel_map[_servo_yaw_motor]);
     hal.rcout->set_freq(mask, _speed_hz);
 }
 
@@ -255,7 +255,7 @@ void AP_MotorsHeli::enable()
     hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]));    // swash servo 1
     hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]));    // swash servo 2
     hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]));    // swash servo 3
-    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]));    // yaw
+    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[_servo_yaw_motor]));   // yaw
     hal.rcout->enable_ch(AP_MOTORS_HELI_AUX);                               // output for gyro gain or direct drive variable pitch tail motor
     hal.rcout->enable_ch(AP_MOTORS_HELI_RSC);                               // output for main rotor esc
 }
@@ -316,13 +316,13 @@ void AP_MotorsHeli::output_test()
         write_aux(_ext_gyro_gain);
     }
 
-    // servo 4
+    // yaw servo
     for( i=0; i<5; i++ ) {
-        hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo_4.radio_trim + 100);
+        hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[_servo_yaw_motor]), _servo_yaw.radio_trim + 100);
         hal.scheduler->delay(300);
-        hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo_4.radio_trim - 100);
+        hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[_servo_yaw_motor]), _servo_yaw.radio_trim - 100);
         hal.scheduler->delay(300);
-        hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo_4.radio_trim + 0);
+        hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[_servo_yaw_motor]), _servo_yaw.radio_trim + 0);
         hal.scheduler->delay(300);
     }
 
@@ -442,12 +442,13 @@ void AP_MotorsHeli::reset_swash()
 // init_swash - initialise the swash plate
 void AP_MotorsHeli::init_swash()
 {
+    _servo_yaw_motor = AP_MOTORS_MOT_4;
 
     // swash servo initialisation
     _servo_1.set_range(0,1000);
     _servo_2.set_range(0,1000);
     _servo_3.set_range(0,1000);
-    _servo_4.set_angle(4500);
+    _servo_yaw.set_angle(4500);
 
     // range check collective min, max and mid
     if( _collective_min >= _collective_max ) {
@@ -612,15 +613,15 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
         _servo_2.servo_out += 500;
     }
     _servo_3.servo_out = (_rollFactor[CH_3] * roll_out + _pitchFactor[CH_3] * pitch_out)/10 + _collectiveFactor[CH_3] * coll_out_scaled + (_servo_3.radio_trim-1500);
-    _servo_4.servo_out = yaw_out + yaw_offset;
+    _servo_yaw.servo_out = yaw_out + yaw_offset;
 
     // constrain yaw and update limits
-    if (_servo_4.servo_out < -4500) {
-        _servo_4.servo_out = -4500;
+    if (_servo_yaw.servo_out < -4500) {
+        _servo_yaw.servo_out = -4500;
         limit.yaw = true;
     }
-    if (_servo_4.servo_out > 4500) {
-        _servo_4.servo_out = 4500;
+    if (_servo_yaw.servo_out > 4500) {
+        _servo_yaw.servo_out = 4500;
         limit.yaw = true;
     }
 
@@ -628,13 +629,13 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
     _servo_1.calc_pwm();
     _servo_2.calc_pwm();
     _servo_3.calc_pwm();
-    _servo_4.calc_pwm();
+    _servo_yaw.calc_pwm();
 
     // actually move the servos
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo_1.radio_out);
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo_2.radio_out);
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo_3.radio_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo_4.radio_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[_servo_yaw_motor]), _servo_yaw.radio_out);
 
     // output gain to exernal gyro
     if (_tail_type == AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
@@ -679,12 +680,12 @@ void AP_MotorsHeli::rsc_control()
         }
     }
 
-    // direct drive fixed pitch tail servo gets copy of yaw servo out (ch4) while main rotor is running
+    // direct drive fixed pitch tail servo gets copy of yaw servo out while main rotor is running
     if (_tail_type == AP_MOTORS_HELI_TAILTYPE_DIRECTDRIVE_FIXEDPITCH) {
         // output fixed-pitch speed control if Ch8 is high
         if (_rotor_desired > 0 || _rotor_speed_estimate > 0) {
             // copy yaw output to tail esc
-            write_aux(_servo_4.servo_out);
+            write_aux(_servo_yaw.servo_out);
         }else{
             write_aux(0);
         }

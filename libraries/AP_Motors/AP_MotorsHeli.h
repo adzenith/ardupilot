@@ -104,7 +104,7 @@ public:
         _servo_1(swash_servo_1),
         _servo_2(swash_servo_2),
         _servo_3(swash_servo_3),
-        _servo_4(yaw_servo),
+        _servo_yaw(yaw_servo),
         _roll_scaler(1),
         _pitch_scaler(1),
         _collective_scalar(1),
@@ -233,7 +233,7 @@ private:
     RC_Channel&     _servo_1;                   // swash plate servo #1
     RC_Channel&     _servo_2;                   // swash plate servo #2
     RC_Channel&     _servo_3;                   // swash plate servo #3
-    RC_Channel&     _servo_4;                   // tail servo
+    RC_Channel&     _servo_yaw;                 // tail servo
 
     // flags bitmask
     struct heliflags_type {
@@ -281,6 +281,7 @@ private:
     float           _rsc_runup_increment;       // the amount we can increase the rotor's estimated speed during each 100hz iteration
     float           _rotor_speed_estimate;      // estimated speed of the main rotor (0~1000)
     int16_t         _tail_direct_drive_out;     // current ramped speed of output on ch7 when using direct drive variable pitch tail type
+    uint8_t         _servo_yaw_motor;           // motor number of the yaw servo - can change depending on how many swash servos we have
 };
 
 #endif  // AP_MOTORSHELI
