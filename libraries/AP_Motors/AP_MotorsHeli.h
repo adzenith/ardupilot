@@ -30,7 +30,7 @@
 #define AP_MOTORS_HELI_SERVO3_POS               180
 
 // swash type definitions
-#define AP_MOTORS_HELI_SWASH_CCPM               0
+#define AP_MOTORS_HELI_SWASH_H3                 0
 #define AP_MOTORS_HELI_SWASH_H1                 1
 
 // default swash min and max angles and positions
