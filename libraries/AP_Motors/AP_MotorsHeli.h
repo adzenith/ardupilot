@@ -1,6 +1,6 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-/// @file	AP_MotorsHeli.h
+/// @file 	AP_MotorsHeli.h
 /// @brief	Motor control class for Traditional Heli
 
 #ifndef __AP_MOTORS_HELI_H__
@@ -117,7 +117,7 @@ public:
         _rotor_speed_estimate(0.0f),
         _tail_direct_drive_out(0)
     {
-		AP_Param::setup_object_defaults(this, var_info);
+        AP_Param::setup_object_defaults(this, var_info);
 
         // initialise flags
         _heliflags.swash_initialised = 0;

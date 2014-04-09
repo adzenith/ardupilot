@@ -241,10 +241,10 @@ void AP_MotorsHeli::set_update_rate( uint16_t speed_hz )
 
     // setup fast channels
     uint32_t mask = 
-	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]) |
-	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]) |
-	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]) |
-	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]);
+        1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]) |
+        1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]) |
+        1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]) |
+        1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]);
     hal.rcout->set_freq(mask, _speed_hz);
 }
 
@@ -433,7 +433,7 @@ void AP_MotorsHeli::reset_swash()
     _roll_scaler = 1.0f;
     _pitch_scaler = 1.0f;
     _collective_scalar = ((float)(_rc_throttle.radio_max - _rc_throttle.radio_min))/1000.0f;
-	_collective_scalar_manual = 1.0f;
+    _collective_scalar_manual = 1.0f;
 
     // we must be in set-up mode so mark swash as uninitialised
     _heliflags.swash_initialised = false;
@@ -595,7 +595,7 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
 
         // scale collective pitch
         coll_out_scaled = _collective_out * _collective_scalar + _collective_min - 1000;
-	
+
         // rudder feed forward based on collective
         // the feed-forward is not required when the motor is shut down and not creating torque
         // also not required if we are using external gyro
