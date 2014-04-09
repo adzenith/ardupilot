@@ -13,7 +13,7 @@
 #include "AP_Motors.h"
 
 // maximum number of swashplate servos
-#define AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS    3
+#define AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS    4
 
 // servo output rates
 #define AP_MOTORS_HELI_SPEED_DEFAULT            125     // default servo update rate for helicopters
@@ -30,6 +30,7 @@
 #define AP_MOTORS_HELI_SERVO3_POS               180
 
 // swash type definitions
+#define AP_MOTORS_HELI_SWASH_H4                 2
 #define AP_MOTORS_HELI_SWASH_H3                 0
 #define AP_MOTORS_HELI_SWASH_H1                 1
 

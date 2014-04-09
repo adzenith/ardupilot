@@ -109,8 +109,8 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 
     // @Param: SWASH_TYPE
     // @DisplayName: Swash Type
-    // @Description: Swash Type Setting - either 3-servo CCPM (H3) or H1 Mechanical Mixing
-    // @Values: 0:3-Servo CCPM, 1:H1 Mechanical Mixing
+    // @Description: Swash Type Setting - either 3-servo (H3) or 4-servo (H4) CCPM, or H1 Mechanical Mixing
+    // @Values: 0:3-Servo CCPM, 1:H1 Mechanical Mixing, 2:4-servo CCPM
     // @User: Standard
     AP_GROUPINFO("SWASH_TYPE",10,   AP_MotorsHeli,  _swash_type, AP_MOTORS_HELI_SWASH_H3),
 
@@ -483,7 +483,8 @@ void AP_MotorsHeli::init_swash()
 // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
 void AP_MotorsHeli::calculate_roll_pitch_collective_factors()
 {
-    if (_swash_type == AP_MOTORS_HELI_SWASH_H3) {                     //3-Servo CCPM Swashplate, perform control mixing
+    //3- or 4-Servo CCPM Swashplate: perform control mixing
+    if (_swash_type == AP_MOTORS_HELI_SWASH_H3 || _swash_type == AP_MOTORS_HELI_SWASH_H4) {
 
         // roll factors
         _rollFactor[CH_1] = cosf(radians(_servo1_pos + 90 - _phase_angle));
